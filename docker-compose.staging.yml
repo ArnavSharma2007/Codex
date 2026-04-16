@@ -1,0 +1,42 @@
+version: '3.9'
+
+# ═══════════════════════════════════════════════════════════════════
+# Dev@Deakin Codex — STAGING docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+# Overrides: staging ports, staging env, versioned image tags
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  backend:
+    image: USERNAME/codex-backend:${IMAGE_TAG:-staging}
+    container_name: codex-backend-staging
+    environment:
+      NODE_ENV: staging
+      PORT: 5001
+      CLIENT_URL: http://localhost:8080
+      BACKEND_URL: http://localhost:5001
+      HEALTH_CHECK_INTERVAL_MS: 60000
+    ports:
+      - "5001:5001"
+    # Note: No build here — uses pre-built image from Docker Hub
+
+  frontend:
+    image: USERNAME/codex-frontend:${IMAGE_TAG:-staging}
+    container_name: codex-frontend-staging
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  prometheus:
+    ports:
+      - "9091:9090"
+    container_name: codex-prometheus-staging
+
+  grafana:
+    ports:
+      - "3002:3001"
+    container_name: codex-grafana-staging
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-staging-admin}

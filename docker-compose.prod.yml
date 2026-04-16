@@ -1,0 +1,43 @@
+version: '3.9'
+
+# ═══════════════════════════════════════════════════════════════════
+# Dev@Deakin Codex — PRODUCTION docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Promoted from staging via Release stage in Jenkins
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  backend:
+    image: USERNAME/codex-backend:${IMAGE_TAG}
+    container_name: codex-backend-prod
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      HEALTH_CHECK_INTERVAL_MS: 120000
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+
+  frontend:
+    image: USERNAME/codex-frontend:${IMAGE_TAG}
+    container_name: codex-frontend-prod
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.25'
+
+  prometheus:
+    container_name: codex-prometheus-prod
+    restart: always
+
+  grafana:
+    container_name: codex-grafana-prod
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PROD_PASSWORD}

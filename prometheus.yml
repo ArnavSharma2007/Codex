@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════════════
+# Prometheus scrape configuration — Dev@Deakin Codex
+# ═══════════════════════════════════════════════════════════════════
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: 'codex'
+    environment: 'development'
+
+# Alert rules file
+rule_files:
+  - '/etc/prometheus/alerts.yml'
+
+scrape_configs:
+  # ── Backend Node.js API ───────────────────────────────────────
+  - job_name: 'codex-backend'
+    static_configs:
+      - targets: ['backend:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # ── Prometheus self-monitoring ────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

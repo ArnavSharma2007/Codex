@@ -1,0 +1,71 @@
+# ═══════════════════════════════════════════════════════════════════
+# Prometheus Alert Rules — Dev@Deakin Codex
+# Evaluated every 15s; firing alerts logged to Prometheus alertmanager
+# ═══════════════════════════════════════════════════════════════════
+
+groups:
+  - name: codex_health_alerts
+    rules:
+
+      # ── Service Down ──────────────────────────────────────────────
+      - alert: BackendServiceDown
+        expr: up{job="codex-backend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 ALERT: Codex backend is DOWN"
+          description: "The codex-backend service has been unreachable for more than 30 seconds. Immediate action required."
+
+      # ── Health Status ─────────────────────────────────────────────
+      - alert: BackendHealthFailing
+        expr: codex_health_status == 0
+        for: 30s
+        labels:
+          severity: high
+        annotations:
+          summary: "🚨 ALERT: Codex /health endpoint returning unhealthy"
+          description: "Health check gauge has been 0 (unhealthy) for 30 seconds. Check application logs."
+
+      # ── High Error Rate ───────────────────────────────────────────
+      - alert: HighHTTPErrorRate
+        expr: |
+          rate(codex_http_requests_total{status_code=~"5.."}[5m]) 
+          / rate(codex_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: high
+        annotations:
+          summary: "🚨 ALERT: High HTTP 5xx error rate (>5%)"
+          description: "More than 5% of requests are returning 5xx errors for 2 minutes."
+
+      # ── High Response Latency ─────────────────────────────────────
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, rate(codex_http_request_duration_ms_bucket[5m])) > 2000
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ ALERT: API 95th percentile latency > 2000ms"
+          description: "The API is responding slowly. P95 latency has exceeded 2 seconds for 3 minutes."
+
+      # ── Auth Failures ─────────────────────────────────────────────
+      - alert: HighAuthFailureRate
+        expr: rate(codex_auth_failures_total[10m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ ALERT: High authentication failure rate"
+          description: "Possible brute-force attack. More than 0.5 auth failures/second in the last 10 minutes."
+
+      # ── Memory Usage ──────────────────────────────────────────────
+      - alert: HighMemoryUsage
+        expr: codex_nodejs_heap_size_used_bytes / codex_nodejs_heap_size_total_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ ALERT: Node.js heap usage above 90%"
+          description: "The backend is using more than 90% of allocated heap memory. Possible memory leak."
