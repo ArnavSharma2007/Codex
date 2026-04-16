@@ -59,7 +59,9 @@ app.use(metricsMiddleware);
 app.use(generalLimiter);
 
 // ── Database Connection ───────────────────────────────────────────────────
-connectDB();
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
+}
 
 // ── Health Check Endpoint ─────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -110,11 +112,16 @@ app.use(errorHandler);
 
 // ── Start Server ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Codex backend running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
-  logger.info(`📊 Metrics available at http://localhost:${PORT}/metrics`);
-  logger.info(`❤️  Health check at http://localhost:${PORT}/health`);
-});
+
+let server;
+
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`🚀 Codex backend running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    logger.info(`📊 Metrics available at http://localhost:${PORT}/metrics`);
+    logger.info(`❤️  Health check at http://localhost:${PORT}/health`);
+  });
+}
 
 // ── Start Health Monitor (alerts on degradation) ──────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -125,10 +132,15 @@ if (process.env.NODE_ENV !== 'test') {
 // ── Graceful Shutdown ─────────────────────────────────────────────────────
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received — shutting down gracefully');
-  server.close(() => {
-    logger.info('Server closed');
+
+  if (server) {
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 module.exports = app; // Export for testing
