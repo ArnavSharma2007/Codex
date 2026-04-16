@@ -4,7 +4,25 @@ const Stripe = require('stripe');
 const User = require('../models/User');
 const auth = require('../middleware/authMiddleware');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET);
+let stripe;
+
+if (process.env.NODE_ENV === 'test') {
+  console.log('Using MOCK Stripe (CI mode)');
+
+  stripe = {
+    checkout: {
+      sessions: {
+        create: async () => ({
+          id: 'mock-session-id',
+          url: 'http://localhost:3000/success'
+        })
+      }
+    }
+  };
+
+} else {
+  stripe = new Stripe(process.env.STRIPE_SECRET);
+}
 
 router.post('/create-checkout-session', auth, async (req, res) => {
   try {
