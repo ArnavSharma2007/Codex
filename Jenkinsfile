@@ -654,42 +654,31 @@ EOF
     // POST-PIPELINE ACTIONS
     // ════════════════════════════════════════════════════════════════════
     post {
-        always {
-            echo '── Pipeline complete — cleaning up sensitive files ──'
-            sh '''
-                rm -f .env.staging .env.prod || true
-            '''
+    always {
+        script {
+            node {
+                echo '── Pipeline complete — cleaning up sensitive files ──'
+                sh 'rm -f .env.staging .env.prod || true'
+                cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, disableDeferredWipeout: true)
+            }
         }
+    }
 
-        success {
-            echo """
+    success {
+        echo """
 ╔═══════════════════════════════════════════════════════════╗
 ║   ✅  PIPELINE SUCCESSFUL                                  ║
-║                                                            ║
-║   Build Number : ${BUILD_NUMBER}                           ║
-║   Version      : ${IMAGE_VERSION}                          ║
-║   All 7 stages : PASSED                                    ║
-║                                                            ║
-║   1. Build      ✅  Docker images tagged + built           ║
-║   2. Test       ✅  All Jest/Supertest tests passed        ║
-║   3. Quality    ✅  ESLint + SonarCloud gate GREEN         ║
-║   4. Security   ✅  No HIGH/CRITICAL vulnerabilities       ║
-║   5. Deploy     ✅  Staging /health smoke test passed      ║
-║   6. Release    ✅  Images pushed, git tagged              ║
-║   7. Monitoring ✅  Prometheus + Grafana operational       ║
 ╚═══════════════════════════════════════════════════════════╝
 """
-        }
+    }
 
-        failure {
-            echo """
+    failure {
+        echo """
 ╔═══════════════════════════════════════════════════════════╗
 ║   ❌  PIPELINE FAILED                                      ║
-║   Build #${BUILD_NUMBER} did not complete all stages.     ║
-║   Review the failing stage above for details.             ║
 ╚═══════════════════════════════════════════════════════════╝
 """
-        }
+    }
 
         cleanup {
             // Always clean workspace to avoid stale files
