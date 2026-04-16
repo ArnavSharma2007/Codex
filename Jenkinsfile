@@ -679,10 +679,5 @@ EOF
 ╚═══════════════════════════════════════════════════════════╝
 """
     }
-
-        cleanup {
-            // Always clean workspace to avoid stale files
-            cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, disableDeferredWipeout: true)
-        }
     }
 }
