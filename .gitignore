@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════════════
+# .gitignore — Dev@Deakin Codex
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Environment / Secrets ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.env
+
+# ── Node.js ───────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Build outputs ─────────────────────────────────────────────────
+dist/
+build/
+.vite/
+
+# ── Test & Coverage ────────────────────────────────────────────────
+coverage/
+.nyc_output/
+junit.xml
+npm-audit-*.json
+trivy-*.log
+
+# ── Logs ─────────────────────────────────────────────────────────
+logs/
+*.log
+backend/logs/
+
+# ── OS specifics ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
+
+# ── Docker ────────────────────────────────────────────────────────
+.env.staging
+.env.prod
+.env.ci
+
+# ── SonarQube ─────────────────────────────────────────────────────
+.scannerwork/
+.sonarqube/
