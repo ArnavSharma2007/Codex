@@ -1,7 +1,22 @@
-if (process.env.NODE_ENV === 'test') {
-  module.exports = (req, res, next) => next();
-  return;
-}
+const Joi = require('joi');
+
+const validate = (schema) => (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
+  const { error } = schema.validate(req.body);
+
+  if (error) {
+    return res.status(422).json({
+      message: error.details[0].message
+    });
+  }
+
+  next();
+};
+
+module.exports = validate;
 /**
  * Joi validation middleware factory.
  * Usage: router.post('/route', validate(schema), handler)
