@@ -10,13 +10,17 @@ pipeline {
     environment {
         APP_NAME        = 'codex'
         IMAGE_VERSION   = "v1.0.${BUILD_NUMBER}"
-        BACKEND_IMAGE   = "USERNAME/codex-backend:${IMAGE_VERSION}"
-        FRONTEND_IMAGE  = "USERNAME/codex-frontend:${IMAGE_VERSION}"
+        BACKEND_IMAGE   = "arnavsharma2007/codex-backend:${IMAGE_VERSION}"
+        FRONTEND_IMAGE  = "arnavsharma2007/codex-frontend:${IMAGE_VERSION}"
         STAGING_BACKEND_URL = 'http://localhost:5001'
         NODE_VERSION    = '20'
 
         SONAR_PROJECT_KEY = 'ArnavSharma2007_Codex' 
         SONAR_ORG         = 'arnavsharma2007'
+
+        STRIPE_SECRET     = 'sk_test_placeholder'
+        STRIPE_PUBLISHABLE_KEY = 'pk_test_placeholder'
+        STRIPE_WEBHOOK_SECRET = 'whsec_placeholder'
 
         // Jenkins Credentials IDs — configure these in Jenkins → Credentials
         DOCKERHUB_CREDS     = credentials('dockerhub-credentials')   // Username/Password
@@ -358,17 +362,17 @@ pipeline {
 
                     # Write environment file for staging
                     cat > .env.staging << EOF
-MONGO_URI=${MONGO_URI}
-JWT_SECRET=${JWT_SECRET}
-GEMINI_API_KEY=${GEMINI_API_KEY}
-STRIPE_SECRET=${STRIPE_SECRET ?: 'sk_test_placeholder'}
-STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
-STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
-BACKEND_ADMIN_KEY=admin_staging
-ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL ?: ''}
-GRAFANA_PASSWORD=staging-admin
-IMAGE_TAG=${IMAGE_VERSION}
-EOF
+                    MONGO_URI=${MONGO_URI}
+                    JWT_SECRET=${JWT_SECRET}
+                    GEMINI_API_KEY=${GEMINI_API_KEY}
+                    STRIPE_SECRET=${STRIPE_SECRET ?: 'sk_test_placeholder'}
+                    STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
+                    STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
+                    BACKEND_ADMIN_KEY=admin_staging
+                    ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL ?: ''}
+                    GRAFANA_PASSWORD=staging-admin
+                    IMAGE_TAG=${IMAGE_VERSION}
+                    EOF
 
                     # Stop any existing staging containers
                     echo "── Stopping existing staging containers ──"
@@ -376,10 +380,10 @@ EOF
                         --env-file .env.staging \\
                         down --remove-orphans || true
 
-                    # Pull images (they are locally built in Build stage)
+                    # Pull images
                     echo "── Starting staging environment ──"
-                    docker-compose -f docker-compose.yml -f docker-compose.staging.yml \\
-                        --env-file .env.staging \\
+                    docker compose -f docker-compose.yml -f docker-compose.staging.yml \
+                        --env-file .env.staging \
                         up -d backend
 
                     echo "Waiting 20s for backend to initialise..."
