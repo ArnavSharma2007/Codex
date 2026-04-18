@@ -32,10 +32,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res)
 
   const existing = await User.findOne({ email: normalizedEmail });
   if (existing) {
-    authFailures.inc({ reason: 'email_taken' });
-    return res.status(409).json({
-      errors: [{ message: 'User already registered' }]
-    });
+    return res.status(409).json({ message: 'User already registered' });
   }
 
   const salt = await bcrypt.genSalt(12);
