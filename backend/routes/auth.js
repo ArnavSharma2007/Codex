@@ -140,7 +140,8 @@ router.post('/get-user-status', async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ email }).select('email isPremium');
+  // Force email to be a primitive string and use an explicit $eq operator
+  const user = await User.findOne({ email: { $eq: String(email) } }).select('email isPremium');
 
   if (!user) {
     return res.status(404).json({
