@@ -4,17 +4,17 @@ const auth = require('../middleware/authMiddleware');
 const Note = require('../models/Note');
 const User = require('../models/User');
 
-// Create a note (authenticated)
+// Create a note
 router.post('/', auth, async (req, res) => {
   try {
     const { title, quillDelta, isPrivate } = req.body;
 
     const note = new Note({
       title: title || 'Untitled',
-      owner: req.user.id,
+      owner: req.user.id, // ✅ keep as is
       quillDelta: quillDelta || null,
       isPrivate: typeof isPrivate === 'boolean' ? isPrivate : true,
-      collaborators: [] // ✅ ensure array exists
+      collaborators: []
     });
 
     await note.save();
@@ -26,13 +26,13 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// List notes for authenticated user
+// List notes
 router.get('/', auth, async (req, res) => {
   try {
     const notes = await Note.find({
       $or: [
-        { owner: req.user.id.toString() },
-        { collaborators: req.user.id.toString() }
+        { owner: req.user.id },           // ✅ FIXED (no toString)
+        { collaborators: req.user.id }
       ]
     }).sort({ updatedAt: -1 });
 
@@ -63,12 +63,10 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Note not found' });
     }
 
-    // ✅ Public note → allow directly
     if (!note.isPrivate) {
       return res.json(note);
     }
 
-    // ✅ Private → require auth
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ')
       ? authHeader.split(' ')[1]
@@ -94,7 +92,7 @@ router.get('/:id', async (req, res) => {
       }
 
       return res.json(note);
-    } catch (e) {
+    } catch {
       return res.status(403).json({ message: 'Invalid token' });
     }
 
