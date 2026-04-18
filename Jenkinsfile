@@ -210,6 +210,15 @@ EOF
                         fi
                         sleep 10
                     done
+                    echo "================================================"
+                    echo "❌ SMOKE TEST FAILED — /health did not return { status: ok }"
+                    echo "   Last response: \$(cat /tmp/health_response.json 2>/dev/null || echo 'no response')"
+                    echo "================================================"
+                    
+                    # ADD THESE TWO LINES TO PRINT THE CRASH LOGS:
+                    echo "── BACKEND CONTAINER LOGS ──"
+                    ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging logs backend
+                    
                     exit 1
                 """
             }
