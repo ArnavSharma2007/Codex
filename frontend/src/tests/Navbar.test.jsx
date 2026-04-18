@@ -12,12 +12,15 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }) => <>{children}</>,
 }));
 
-jest.mock('../AuthContext', () => ({
-  AuthContext: React.createContext({
-    user: { name: 'Test User', email: 'test@test.com', isPremium: false },
-    logout: jest.fn(),
-  }),
-}));
+jest.mock('../AuthContext', () => {
+  const React = require('react'); // <-- Bring React into the mock's scope
+  return {
+    AuthContext: React.createContext({
+      user: { name: 'Test User', email: 'test@test.com', isPremium: false },
+      logout: jest.fn(),
+    }),
+  };
+});
 
 jest.mock('../hooks/useTheme', () => ({
   useTheme: () => ({ theme: 'dark', toggleTheme: jest.fn(), isDark: true }),
