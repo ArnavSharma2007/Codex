@@ -408,7 +408,7 @@ pipeline {
                             echo "✅ Health check HTTP 200 received"
                             echo "   Response body: \$BODY"
 
-                            STATUS=\$(echo "\$BODY" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.status)}catch(e){console.log('unknown');}}")
+                            STATUS=\$(echo "\$BODY" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.status)}catch(e){console.log('unknown');}})")
                             
                             if [ "\$STATUS" = "ok" ]; then
                                 echo "   status: ok ✅"
@@ -438,7 +438,7 @@ pipeline {
                 failure {
                     echo '❌ DEPLOY STAGE FAILED — Smoke test did not pass. Rolling back staging...'
                     sh '''
-                        docker-compose -f docker-compose.yml -f docker-compose.staging.yml \\
+                        docker compose -f docker-compose.yml -f docker-compose.staging.yml \\
                             down --remove-orphans || true
                         echo "Staging containers stopped"
                     '''
@@ -514,11 +514,11 @@ GRAFANA_PROD_PASSWORD=prod-secure-admin
 IMAGE_TAG=${IMAGE_VERSION}
 EOF
 
-                    docker-compose -f docker-compose.yml -f docker-compose.prod.yml \\
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml \\
                         --env-file .env.prod \\
                         pull
 
-                    docker-compose -f docker-compose.yml -f docker-compose.prod.yml \\
+                    docker compose -f docker-compose.yml -f docker-compose.prod.yml \\
                         --env-file .env.prod \\
                         up -d
 
