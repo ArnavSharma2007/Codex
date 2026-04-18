@@ -2,10 +2,6 @@ const Joi = require('joi');
 
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
-    // Skip validation during tests
-    if (process.env.NODE_ENV === 'test') {
-      return next();
-    }
 
     const { error, value } = schema.validate(req[property], {
       abortEarly: false,
