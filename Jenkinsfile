@@ -15,6 +15,9 @@ pipeline {
         STAGING_BACKEND_URL = 'http://localhost:5001'
         NODE_VERSION    = '20'
 
+        SONAR_PROJECT_KEY = 'ArnavSharma2007_Codex' 
+        SONAR_ORG         = 'arnavsharma2007'
+
         // Jenkins Credentials IDs — configure these in Jenkins → Credentials
         DOCKERHUB_CREDS     = credentials('dockerhub-credentials')   // Username/Password
         SONAR_TOKEN         = credentials('sonarcloud-token')         // Secret Text
