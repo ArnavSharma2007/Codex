@@ -22,10 +22,18 @@ jest.mock('framer-motion', () => ({
 }));
 
 // Mock AuthContext
-jest.mock('../AuthContext', () => ({
-  AuthContext: React.createContext({ user: null, token: null, login: jest.fn(), logout: jest.fn() }),
-  AuthProvider: ({ children }) => <>{children}</>,
-}));
+jest.mock('../AuthContext', () => {
+  const React = require('react'); // <-- Bring React into the mock's scope
+  return {
+    AuthContext: React.createContext({ 
+      user: null, 
+      token: null, 
+      login: jest.fn(), 
+      logout: jest.fn() 
+    }),
+    AuthProvider: ({ children }) => children,
+  };
+});
 
 // Simple smoke tests for routes
 describe('App — Route Rendering', () => {
