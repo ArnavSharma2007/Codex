@@ -25,7 +25,14 @@ const app = express();
 
 // ── Security Headers ──────────────────────────────────────────────────────
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'"], // Add your CDN domains here
+      "style-src": ["'self'", "'unsafe-inline'"],
+      "img-src": ["'self'", "data:", "https:"],
+    },
+  },
 }));
 
 // ── CORS ──────────────────────────────────────────────────────────────────
