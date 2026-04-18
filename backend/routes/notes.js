@@ -120,7 +120,8 @@ router.post('/:id/share', auth, async (req, res) => {
 
     const { email } = req.body;
 
-    const userToShare = await User.findOne({ email });
+    // Sanitize the email input before the query
+    const userToShare = await User.findOne({ email: { $eq: String(email) } });
     if (!userToShare) {
       return res.status(404).json({ message: 'User to share with not found' });
     }
