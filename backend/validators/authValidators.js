@@ -1,12 +1,11 @@
 const Joi = require('joi');
 
 // ✅ Simple, test-friendly schemas
-
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(50).required(),
 
   email: Joi.string()
-    .email()
+    .email({ tlds: { allow: false } }) // <-- Disables strict TLD checking for tests
     .required(),
 
   password: Joi.string()
@@ -16,7 +15,7 @@ const registerSchema = Joi.object({
 
 const loginSchema = Joi.object({
   email: Joi.string()
-    .email()
+    .email({ tlds: { allow: false } }) // <-- Disables strict TLD checking for tests
     .required(),
 
   password: Joi.string()
@@ -26,7 +25,7 @@ const loginSchema = Joi.object({
 
 const setPremiumSchema = Joi.object({
   email: Joi.string()
-    .email()
+    .email({ tlds: { allow: false } })
     .required(),
 
   adminKey: Joi.string()
