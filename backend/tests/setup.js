@@ -15,15 +15,15 @@ beforeAll(async () => {
   console.log('🧪 In-memory MongoDB connected');
 });
 
-afterEach(async () => {
+// ✅ Changed from afterEach to afterAll (merged into the teardown step)
+afterAll(async () => {
+  // Wipe collections
   const collections = mongoose.connection.collections;
-
   for (const key in collections) {
     await collections[key].deleteMany();
   }
-});
 
-afterAll(async () => {
+  // Close connections
   await mongoose.connection.close();
   await mongo.stop();
   console.log('🛑 In-memory MongoDB stopped');
