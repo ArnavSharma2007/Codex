@@ -173,23 +173,29 @@ pipeline {
 
         stage('🚀 5 — Deploy (Staging)') {
             steps {
-                sh """
+sh """
                     curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-\$(uname -s)-\$(uname -m)" -o ./docker-compose
                     chmod +x ./docker-compose
 
-                cat > .env.staging << EOF
-                MONGO_URI=${env.MONGO_URI ?: ''}
-                JWT_SECRET=${env.JWT_SECRET ?: ''}
-                GEMINI_API_KEY=${env.GEMINI_API_KEY ?: ''}
-                STRIPE_SECRET=${env.STRIPE_SECRET ?: 'sk_test_placeholder'}
-                STRIPE_PUBLISHABLE_KEY=${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
-                STRIPE_WEBHOOK_SECRET=${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
-                BACKEND_ADMIN_KEY=admin_staging
-                ALERT_WEBHOOK_URL=${env.ALERT_WEBHOOK_URL ?: ''}
-                GRAFANA_PASSWORD=staging-admin
-                IMAGE_TAG=${env.IMAGE_VERSION ?: 'latest'}
-                PORT=5001
-                EOF
+                    cat > .env.staging << EOF
+MONGO_URI=${env.MONGO_URI ?: ''}
+JWT_SECRET=${env.JWT_SECRET ?: ''}
+GEMINI_API_KEY=${env.GEMINI_API_KEY ?: ''}
+STRIPE_SECRET=${env.STRIPE_SECRET ?: 'sk_test_placeholder'}
+STRIPE_PUBLISHABLE_KEY=${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
+STRIPE_WEBHOOK_SECRET=${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
+BACKEND_ADMIN_KEY=admin_staging
+ALERT_WEBHOOK_URL=${env.ALERT_WEBHOOK_URL ?: ''}
+GRAFANA_PASSWORD=staging-admin
+IMAGE_TAG=${env.IMAGE_VERSION ?: 'latest'}
+PORT=5001
+EOF
+
+                    ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging down --remove-orphans || true
+                    ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d backend
+
+                    sleep 20
+                """
 
                     ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging down --remove-orphans || true
                     ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d backend
