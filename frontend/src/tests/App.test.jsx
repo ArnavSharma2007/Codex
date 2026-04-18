@@ -1,18 +1,9 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock framer-motion to avoid animation issues in test
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }) => <div {...props}>{children}</div>,
-    nav: ({ children, ...props }) => <nav {...props}>{children}</nav>,
-    button: ({ children, ...props }) => <button {...props}>{children}</button>,
-    span: ({ children, ...props }) => <span {...props}>{children}</span>,
-  },
-  AnimatePresence: ({ children }) => <>{children}</>,
-  useAnimation: () => ({ start: jest.fn() }),
-}));
+// ❌ The framer-motion mock was deleted from here.
+// It will now safely inherit the robust mock from setupTests.jsx!
 
 // Mock AuthContext
 jest.mock('../AuthContext', () => {
