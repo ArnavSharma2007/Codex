@@ -375,7 +375,7 @@ pipeline {
 
                     # Stop any existing staging containers
                     echo "── Stopping existing staging containers ──"
-                    docker-compose -f docker-compose.yml -f docker-compose.staging.yml \\
+                    docker compose -f docker-compose.yml -f docker-compose.staging.yml \\
                         --env-file .env.staging \\
                         down --remove-orphans || true
 
