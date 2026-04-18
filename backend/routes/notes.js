@@ -105,7 +105,10 @@ router.get('/:id', async (req, res) => {
 // Share note
 router.post('/:id/share', auth, async (req, res) => {
   try {
-    const note = await Note.findById(req.params.id);
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    const note = await Note.findById(String(req.params.id));
 
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
