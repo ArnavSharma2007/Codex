@@ -22,21 +22,20 @@ const signToken = (user) => {
 router.post('/register', authLimiter, validate(registerSchema), async (req, res) => {
   const { name, email, password } = req.body;
 
-  // ✅ Prevent missing password crash (bcrypt error fix)
   if (!name || !email || !password) {
     return res.status(422).json({
       errors: [{ message: 'All fields are required' }]
     });
   }
 
-  // ✅ Normalize email (fix duplicate bug)
   const normalizedEmail = email.toLowerCase();
 
-  // ✅ Check duplicate user
   const existing = await User.findOne({ email: normalizedEmail });
   if (existing) {
     authFailures.inc({ reason: 'email_taken' });
-    return res.status(409).json({ message: 'User already registered' });
+    return res.status(409).json({
+      errors: [{ message: 'User already registered' }]
+    });
   }
 
   const salt = await bcrypt.genSalt(12);
@@ -53,7 +52,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res)
   const token = signToken(user);
   logger.info(`New user registered: ${normalizedEmail}`);
 
-  res.status(201).json({
+  return res.status(201).json({
     token,
     user: {
       id: user._id,
@@ -79,19 +78,23 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     authFailures.inc({ reason: 'user_not_found' });
-    return res.status(401).json({ message: 'Invalid credentials' });
+    return res.status(401).json({
+      errors: [{ message: 'Invalid credentials' }]
+    });
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
     authFailures.inc({ reason: 'wrong_password' });
-    return res.status(401).json({ message: 'Invalid credentials' });
+    return res.status(401).json({
+      errors: [{ message: 'Invalid credentials' }]
+    });
   }
 
   const token = signToken(user);
   logger.info(`User login: ${normalizedEmail}`);
 
-  res.json({
+  return res.status(200).json({
     token,
     user: {
       id: user._id,
@@ -107,34 +110,53 @@ router.post('/set-premium', validate(setPremiumSchema), async (req, res) => {
   const { email, adminKey } = req.body;
 
   if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({
+      errors: [{ message: 'Forbidden' }]
+    });
   }
 
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user) {
+    return res.status(404).json({
+      errors: [{ message: 'User not found' }]
+    });
+  }
 
   user.isPremium = true;
   await user.save();
 
   logger.info(`User ${email} upgraded to premium`);
-  res.json({ message: 'User upgraded to premium' });
+
+  return res.json({ message: 'User upgraded to premium' });
 });
 
 // POST /api/auth/get-user-status
 router.post('/get-user-status', async (req, res) => {
   const { email } = req.body;
 
-  if (!email) return res.status(400).json({ message: 'Email required' });
+  if (!email) {
+    return res.status(400).json({
+      errors: [{ message: 'Email required' }]
+    });
+  }
 
   const user = await User.findOne({ email }).select('email isPremium');
-  if (!user) return res.status(404).json({ message: 'User not found' });
 
-  res.json({ email: user.email, isPremium: user.isPremium });
+  if (!user) {
+    return res.status(404).json({
+      errors: [{ message: 'User not found' }]
+    });
+  }
+
+  return res.json({
+    email: user.email,
+    isPremium: user.isPremium
+  });
 });
 
 // GET /api/auth/verify
 router.get('/verify', auth, async (req, res) => {
-  res.json({ user: req.user });
+  return res.json({ user: req.user });
 });
 
 module.exports = router;
