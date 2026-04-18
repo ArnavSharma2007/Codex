@@ -55,7 +55,7 @@ pipeline {
 
                 echo '── Installing frontend dependencies ──'
                 dir('frontend') {
-                    sh 'npm ci --prefer-offline'
+                    sh 'npm install --legacy-peer-deps'
                     echo '✅  Frontend dependencies installed'
                 }
 
