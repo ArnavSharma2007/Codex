@@ -4,6 +4,15 @@ module.exports = {
     ['@babel/preset-react', { runtime: 'automatic' }],
   ],
   plugins: [
-    'babel-plugin-transform-import-meta'
-  ]
+    // Inline plugin to fix Vite's import.meta in Jest
+    function () {
+      return {
+        visitor: {
+          MetaProperty(path) {
+            path.replaceWithSourceString('process');
+          },
+        },
+      };
+    },
+  ],
 };
