@@ -1,5 +1,3 @@
-const Joi = require('joi');
-
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
 
