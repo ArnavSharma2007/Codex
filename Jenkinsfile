@@ -22,13 +22,14 @@ pipeline {
         STRIPE_PUBLISHABLE_KEY = 'pk_test_placeholder'
         STRIPE_WEBHOOK_SECRET = 'whsec_placeholder'
 
+        ALERT_WEBHOOK_URL      = ''
+
         // Jenkins Credentials IDs — configure these in Jenkins → Credentials
         DOCKERHUB_CREDS     = credentials('dockerhub-credentials')   // Username/Password
         SONAR_TOKEN         = credentials('sonarcloud-token')         // Secret Text
         MONGO_URI           = credentials('mongo-uri')                // Secret Text
         JWT_SECRET          = credentials('jwt-secret')               // Secret Text
         GEMINI_API_KEY      = credentials('gemini-api-key')           // Secret Text
-        ALERT_WEBHOOK_URL   = credentials('alert-webhook-url')        // Secret Text (optional)
     }
 
     options {
