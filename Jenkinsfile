@@ -16,6 +16,11 @@ pipeline {
         SONAR_PROJECT_KEY = 'ArnavSharma2007_Codex' 
         SONAR_ORG         = 'arnavsharma2007'
 
+        STRIPE_SECRET          = 'sk_test_placeholder'
+        STRIPE_PUBLISHABLE_KEY = 'pk_test_placeholder'
+        STRIPE_WEBHOOK_SECRET  = 'whsec_placeholder'
+        ALERT_WEBHOOK_URL      = ''
+
         DOCKERHUB_CREDS     = credentials('dockerhub-credentials')
         SONAR_TOKEN         = credentials('sonarcloud-token')
         MONGO_URI           = credentials('mongo-uri')
@@ -45,14 +50,14 @@ pipeline {
                 }
 
                 echo '── Building Docker images ──'
-                sh """
-                    docker build -t ${BACKEND_IMAGE} -t arnavsharma2007/codex-backend:latest ./backend
-                    docker build \\
-                        --build-arg VITE_BACKEND_URL=http://localhost:5000 \\
-                        -t ${FRONTEND_IMAGE} \\
-                        -t arnavsharma2007/codex-frontend:latest \\
+                sh '''
+                    docker build -t $BACKEND_IMAGE -t arnavsharma2007/codex-backend:latest ./backend
+                    docker build \
+                        --build-arg VITE_BACKEND_URL=http://localhost:5000 \
+                        -t $FRONTEND_IMAGE \
+                        -t arnavsharma2007/codex-frontend:latest \
                         ./frontend
-                """
+                '''
             }
         }
 
@@ -60,18 +65,20 @@ pipeline {
             steps {
                 dir('backend') {
                     withEnv([
-                        "MONGO_URI=${env.MONGO_URI ?: ''}",
-                        "JWT_SECRET=${env.JWT_SECRET ?: ''}",
                         "NODE_ENV=test",
                         "PORT=5001"
                     ]) {
-                        sh 'npm run test:ci'
+                        sh '''
+                            npm run test:ci
+                        '''
                     }
                     junit allowEmptyResults: false, testResults: 'junit.xml'
                 }
 
                 dir('frontend') {
-                    sh 'npm run test:ci'
+                    sh '''
+                        npm run test:ci
+                    '''
                     junit allowEmptyResults: false, testResults: 'junit.xml'
                 }
             }
@@ -99,21 +106,23 @@ pipeline {
                 }
 
                 dir('frontend') {
-                    sh 'npm run lint 2>&1 | tee eslint-frontend.log || true'
+                    sh '''
+                        npm run lint 2>&1 | tee eslint-frontend.log || true
+                    '''
                 }
 
                 withSonarQubeEnv('SonarCloud') {
-                    sh """
-                        npx sonar-scanner \\
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                            -Dsonar.organization=${SONAR_ORG} \\
-                            -Dsonar.host.url=https://sonarcloud.io \\
-                            -Dsonar.login=${SONAR_TOKEN} \\
-                            -Dsonar.sources=backend/,frontend/src \\
-                            -Dsonar.exclusions=**/node_modules/**,**/coverage/**,**/tests/**,**/dist/**,**/*.test.*,**/*.spec.* \\
-                            -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info \\
-                            -Dsonar.branch.name=${env.BRANCH_NAME ?: 'main'}
-                    """
+                    sh '''
+                        npx sonar-scanner \
+                            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+                            -Dsonar.organization=$SONAR_ORG \
+                            -Dsonar.host.url=https://sonarcloud.io \
+                            -Dsonar.login=$SONAR_TOKEN \
+                            -Dsonar.sources=backend/,frontend/src \
+                            -Dsonar.exclusions="**/node_modules/**,**/coverage/**,**/tests/**,**/dist/**,**/*.test.*,**/*.spec.*" \
+                            -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info \
+                            -Dsonar.branch.name=${BRANCH_NAME:-main}
+                    '''
                 }
             }
         }
@@ -155,14 +164,14 @@ pipeline {
                     '''
                 }
                 
-                sh """
+                sh '''
                     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b . || true
 
                     if [ -f "./trivy" ]; then
-                        ./trivy image --severity HIGH,CRITICAL ${BACKEND_IMAGE} || true
-                        ./trivy image --severity HIGH,CRITICAL ${FRONTEND_IMAGE} || true
+                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table $BACKEND_IMAGE || true
+                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table $FRONTEND_IMAGE || true
                     fi
-                """
+                '''
             }
             post {
                 always {
@@ -173,21 +182,21 @@ pipeline {
 
         stage('🚀 5 — Deploy (Staging)') {
             steps {
-sh """
-                    curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-\$(uname -s)-\$(uname -m)" -o ./docker-compose
+                sh '''
+                    curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
                     chmod +x ./docker-compose
 
                     cat > .env.staging << EOF
-MONGO_URI=${env.MONGO_URI ?: ''}
-JWT_SECRET=${env.JWT_SECRET ?: ''}
-GEMINI_API_KEY=${env.GEMINI_API_KEY ?: ''}
-STRIPE_SECRET=${env.STRIPE_SECRET ?: 'sk_test_placeholder'}
-STRIPE_PUBLISHABLE_KEY=${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
-STRIPE_WEBHOOK_SECRET=${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
+MONGO_URI=${MONGO_URI:-}
+JWT_SECRET=${JWT_SECRET:-}
+GEMINI_API_KEY=${GEMINI_API_KEY:-}
+STRIPE_SECRET=${STRIPE_SECRET:-sk_test_placeholder}
+STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
 BACKEND_ADMIN_KEY=admin_staging
-ALERT_WEBHOOK_URL=${env.ALERT_WEBHOOK_URL ?: ''}
+ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
 GRAFANA_PASSWORD=staging-admin
-IMAGE_TAG=${env.IMAGE_VERSION ?: 'latest'}
+IMAGE_TAG=${IMAGE_VERSION:-latest}
 PORT=5001
 EOF
 
@@ -195,43 +204,41 @@ EOF
                     ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d backend
 
                     sleep 20
-                """
+                '''
 
-                    ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging down --remove-orphans || true
-                    ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d backend
-
-                    sleep 20
-                """
-
-                sh """
+                sh '''
                     for i in 1 2 3 4 5; do
-                        RESPONSE=\$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 ${STAGING_BACKEND_URL}/health 2>/dev/null || echo "000")
+                        RESPONSE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 $STAGING_BACKEND_URL/health 2>/dev/null || echo "000")
 
-                        if [ "\$RESPONSE" = "200" ]; then
-                            BODY=\$(cat /tmp/health_response.json)
-                            STATUS=\$(echo "\$BODY" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.status)}catch(e){console.log('unknown');}})")
+                        if [ "$RESPONSE" = "200" ]; then
+                            BODY=$(cat /tmp/health_response.json)
+                            STATUS=$(echo "$BODY" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.status)}catch(e){console.log('unknown');}})")
                             
-                            if [ "\$STATUS" = "ok" ]; then
+                            if [ "$STATUS" = "ok" ]; then
+                                echo "✅ SMOKE TEST PASSED"
                                 exit 0
                             fi
                         fi
+                        echo "Health check attempt $i failed. Retrying in 10s..."
                         sleep 10
                     done
+                    
                     echo "================================================"
                     echo "❌ SMOKE TEST FAILED — /health did not return { status: ok }"
-                    echo "   Last response: \$(cat /tmp/health_response.json 2>/dev/null || echo 'no response')"
+                    echo "   Last response: $(cat /tmp/health_response.json 2>/dev/null || echo 'no response')"
                     echo "================================================"
                     
-                    # ADD THESE TWO LINES TO PRINT THE CRASH LOGS:
                     echo "── BACKEND CONTAINER LOGS ──"
                     ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging logs backend
                     
                     exit 1
-                """
+                '''
             }
             post {
                 failure {
-                    sh './docker-compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans || true'
+                    sh '''
+                        ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans || true
+                    '''
                 }
             }
         }
@@ -239,49 +246,49 @@ EOF
         stage('🏷️  6 — Release') {
             when { branch 'main' }
             steps {
-                sh """
-                    echo "\${DOCKERHUB_CREDS_PSW}" | docker login -u "\${DOCKERHUB_CREDS_USR}" --password-stdin
-                    docker push ${BACKEND_IMAGE}
+                sh '''
+                    echo "$DOCKERHUB_CREDS_PSW" | docker login -u "$DOCKERHUB_CREDS_USR" --password-stdin
+                    docker push $BACKEND_IMAGE
                     docker push arnavsharma2007/codex-backend:latest
-                    docker push ${FRONTEND_IMAGE}
+                    docker push $FRONTEND_IMAGE
                     docker push arnavsharma2007/codex-frontend:latest
                     docker logout
-                """
+                '''
 
-                sh """
+                sh '''
                     git config user.email "jenkins@codex-ci.local"
                     git config user.name "Jenkins CI"
-                    git tag -a ${IMAGE_VERSION} -m "Release ${IMAGE_VERSION}" || true
-                    git push origin ${IMAGE_VERSION} || true
-                """
+                    git tag -a $IMAGE_VERSION -m "Release $IMAGE_VERSION" || true
+                    git push origin $IMAGE_VERSION || true
+                '''
 
-                sh """
+                sh '''
                     cat > .env.prod << EOF
-MONGO_URI=${env.MONGO_URI ?: ''}
-JWT_SECRET=${env.JWT_SECRET ?: ''}
-GEMINI_API_KEY=${env.GEMINI_API_KEY ?: ''}
-STRIPE_SECRET=${env.STRIPE_SECRET ?: 'sk_prod_placeholder'}
-STRIPE_PUBLISHABLE_KEY=${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_prod_placeholder'}
-STRIPE_WEBHOOK_SECRET=${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
+MONGO_URI=${MONGO_URI:-}
+JWT_SECRET=${JWT_SECRET:-}
+GEMINI_API_KEY=${GEMINI_API_KEY:-}
+STRIPE_SECRET=${STRIPE_SECRET:-sk_prod_placeholder}
+STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_prod_placeholder}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
 BACKEND_ADMIN_KEY=admin_prod_secure
-ALERT_WEBHOOK_URL=${env.ALERT_WEBHOOK_URL ?: ''}
+ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
 GRAFANA_PROD_PASSWORD=prod-secure-admin
-IMAGE_TAG=${env.IMAGE_VERSION ?: 'latest'}
+IMAGE_TAG=${IMAGE_VERSION:-latest}
 EOF
 
                     ./docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod pull
                     ./docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
-                """
+                '''
             }
         }
 
         stage('📈 7 — Monitoring') {
             steps {
-                sh """
+                sh '''
                     curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy || true
                     curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health || true
                     curl -s http://localhost:5000/metrics | head -5 || true
-                """
+                '''
             }
         }
     }
@@ -290,7 +297,9 @@ EOF
         always {
             script {
                 node {
-                    sh 'rm -f .env.staging .env.prod ./docker-compose ./trivy || true'
+                    sh '''
+                        rm -f .env.staging .env.prod ./docker-compose ./trivy || true
+                    '''
                     cleanWs(cleanWhenNotBuilt: false, deleteDirs: true, disableDeferredWipeout: true)
                 }
             }
