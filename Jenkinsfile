@@ -152,7 +152,8 @@ pipeline {
 
                 echo '── Running ESLint (Backend) ──'
                 dir('backend') {
-                    sh '''
+                    // ✅ Added #!/bin/bash on the first line inside the quotes
+                    sh '''#!/bin/bash
                         npm run lint 2>&1 | tee eslint-backend.log
                         exit_code=${PIPESTATUS[0]}
                         echo "ESLint exit code: $exit_code"
