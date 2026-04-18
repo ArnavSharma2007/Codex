@@ -311,31 +311,23 @@ pipeline {
                 echo '── Trivy: Docker Image Vulnerability Scan ──'
                 sh """
                     echo "================================================"
-                    echo "SECURITY SCAN: Trivy (Backend Docker Image)"
+                    echo "SECURITY SCAN: Trivy"
                     echo "================================================"
 
-                    # Check if trivy is installed, install if not
-                    if ! command -v trivy &> /dev/null; then
-                        echo "Installing Trivy..."
-                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-                    fi
+                    # 1. Install Trivy locally in the current folder (.) instead of /usr/local/bin
+                    echo "Installing Trivy locally..."
+                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b . 
 
                     echo ""
                     echo "Scanning: ${BACKEND_IMAGE}"
-                    echo ""
-
-                    # 1. Add || true here to prevent failing on High/Critical OS issues
-                    trivy image --severity HIGH,CRITICAL --format table ${BACKEND_IMAGE} 2>&1 | tee trivy-backend.log || true
-
-                    # 2. Add || true here to prevent the strict check from failing the pipeline
-                    trivy image --severity CRITICAL --exit-code 1 --quiet ${BACKEND_IMAGE} || true
+                    # 2. Call ./trivy (local) instead of just trivy (global)
+                    ./trivy image --severity HIGH,CRITICAL --format table ${BACKEND_IMAGE} || true
 
                     echo ""
                     echo "Scanning: ${FRONTEND_IMAGE}"
-                    # 3. Add || true here as well
-                    trivy image --severity HIGH,CRITICAL --format table ${FRONTEND_IMAGE} 2>&1 | tee trivy-frontend.log || true
+                    ./trivy image --severity HIGH,CRITICAL --format table ${FRONTEND_IMAGE} || true
 
-                    echo "✅ Trivy scan complete (Vulnerabilities logged)"
+                    echo "✅ Trivy scan process complete"
                 """
             }
             post {
