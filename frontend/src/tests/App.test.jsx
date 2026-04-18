@@ -2,6 +2,36 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
+// Mock framer-motion to prevent useScroll crashes and strip animation props
+jest.mock('framer-motion', () => {
+  const React = require('react');
+  
+  // Helper to remove motion-specific props so React doesn't throw warnings
+  const cleanProps = (props) => {
+    const { initial, animate, exit, transition, whileHover, whileTap, variants, style, ...rest } = props;
+    return rest;
+  };
+
+  return {
+    motion: {
+      div: React.forwardRef((props, ref) => <div ref={ref} {...cleanProps(props)} />),
+      form: React.forwardRef((props, ref) => <form ref={ref} {...cleanProps(props)} />),
+      h1: React.forwardRef((props, ref) => <h1 ref={ref} {...cleanProps(props)} />),
+      h2: React.forwardRef((props, ref) => <h2 ref={ref} {...cleanProps(props)} />),
+      p: React.forwardRef((props, ref) => <p ref={ref} {...cleanProps(props)} />),
+      span: React.forwardRef((props, ref) => <span ref={ref} {...cleanProps(props)} />),
+      button: React.forwardRef((props, ref) => <button ref={ref} {...cleanProps(props)} />),
+      input: React.forwardRef((props, ref) => <input ref={ref} {...cleanProps(props)} />),
+    },
+    AnimatePresence: ({ children }) => <>{children}</>,
+    // Provide safe dummy returns for motion hooks
+    useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
+    useTransform: () => ({ get: () => 0 }),
+    useSpring: () => ({ get: () => 0 }),
+    useAnimation: () => ({ start: jest.fn(), stop: jest.fn() }),
+  };
+});
+
 // Mock Lenis (used in main.jsx but not in App)
 jest.mock('lenis', () => {
   return jest.fn().mockImplementation(() => ({
