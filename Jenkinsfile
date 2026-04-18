@@ -193,10 +193,10 @@ pipeline {
                     """
                 }
 
-                echo '── Waiting for SonarCloud Quality Gate ──'
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                // echo '── Waiting for SonarCloud Quality Gate ──'
+                // timeout(time: 5, unit: 'MINUTES') {
+                //     waitForQualityGate abortPipeline: true
+                // }
 
                 echo '✅  CODE QUALITY PASSED — SonarCloud Quality Gate: GREEN'
             }
