@@ -10,8 +10,9 @@ const validate = (schema, property = 'body') => {
     });
 
     if (error) {
+      // ✅ Map Joi details to an 'errors' array matching test expectations
       return res.status(422).json({
-        message: error.details.map(d => d.message).join(', ')
+        errors: error.details.map(d => ({ message: d.message }))
       });
     }
 
