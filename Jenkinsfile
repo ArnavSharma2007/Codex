@@ -350,41 +350,28 @@ pipeline {
         // Purpose: Deploy versioned images to staging, run smoke test
         // FAILS PIPELINE if /health smoke test fails
         // ════════════════════════════════════════════════════════════════
-        stage('🚀 5 — Deploy (Staging)') {
+stage('🚀 5 — Deploy (Staging)') {
             steps {
                 echo '╔══════════════════════════════════════╗'
                 echo '║  STAGE 5: DEPLOY — STAGING           ║'
                 echo '╚══════════════════════════════════════╝'
 
                 sh """
-                    echo "Deploying to STAGING environment"
-                    echo "Image version: ${IMAGE_VERSION}"
-
-                    # Write environment file for staging
                     cat > .env.staging << EOF
-                    MONGO_URI=${MONGO_URI}
-                    JWT_SECRET=${JWT_SECRET}
-                    GEMINI_API_KEY=${GEMINI_API_KEY}
-                    STRIPE_SECRET=${STRIPE_SECRET ?: 'sk_test_placeholder'}
-                    STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}
-                    STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}
-                    BACKEND_ADMIN_KEY=admin_staging
-                    ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL ?: ''}
-                    GRAFANA_PASSWORD=staging-admin
-                    IMAGE_TAG=${IMAGE_VERSION}
-                    EOF
+MONGO_URI=${MONGO_URI}
+JWT_SECRET=${JWT_SECRET}
+GEMINI_API_KEY=${GEMINI_API_KEY}
+STRIPE_SECRET=${STRIPE_SECRET}
+STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+BACKEND_ADMIN_KEY=admin_staging
+ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL}
+GRAFANA_PASSWORD=staging-admin
+IMAGE_TAG=${IMAGE_VERSION}
+EOF
 
-                    # Stop any existing staging containers
-                    echo "── Stopping existing staging containers ──"
-                    docker compose -f docker-compose.yml -f docker-compose.staging.yml \\
-                        --env-file .env.staging \\
-                        down --remove-orphans || true
-
-                    # Pull images
-                    echo "── Starting staging environment ──"
-                    docker compose -f docker-compose.yml -f docker-compose.staging.yml \
-                        --env-file .env.staging \
-                        up -d backend
+                    docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging down --remove-orphans || true
+                    docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d backend
 
                     echo "Waiting 20s for backend to initialise..."
                     sleep 20
@@ -392,56 +379,28 @@ pipeline {
 
                 echo '── Smoke Test: /health endpoint ──'
                 sh """
-                    echo "================================================"
-                    echo "SMOKE TEST: ${STAGING_BACKEND_URL}/health"
-                    echo "================================================"
-
                     for i in 1 2 3 4 5; do
                         echo "Attempt \$i/5..."
-                        RESPONSE=\$(curl -s -o /tmp/health_response.json -w "%{http_code}" \\
-                            --max-time 10 \\
-                            ${STAGING_BACKEND_URL}/health 2>/dev/null || echo "000")
+                        RESPONSE=\$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 ${STAGING_BACKEND_URL}/health 2>/dev/null || echo "000")
 
                         if [ "\$RESPONSE" = "200" ]; then
                             BODY=\$(cat /tmp/health_response.json)
-                            echo ""
-                            echo "✅ Health check HTTP 200 received"
-                            echo "   Response body: \$BODY"
-
                             STATUS=\$(echo "\$BODY" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.status)}catch(e){console.log('unknown');}})")
                             
                             if [ "\$STATUS" = "ok" ]; then
-                                echo "   status: ok ✅"
-                                echo "================================================"
-                                echo "SMOKE TEST PASSED — Staging deployment healthy"
-                                echo "================================================"
+                                echo "✅ SMOKE TEST PASSED"
                                 exit 0
-                            else
-                                echo "❌ Health status is not 'ok'. Got: \$STATUS"
-                                exit 1
                             fi
                         fi
-                        echo "Health check returned HTTP \$RESPONSE — retrying in 10s..."
                         sleep 10
                     done
-
-                    echo "================================================"
-                    echo "❌ SMOKE TEST FAILED — /health did not return { status: ok }"
-                    echo "   Last response: \$(cat /tmp/health_response.json 2>/dev/null || echo 'no response')"
-                    echo "================================================"
+                    echo "❌ SMOKE TEST FAILED"
                     exit 1
                 """
-
-                echo '✅  STAGING DEPLOYMENT SUCCESSFUL'
             }
             post {
                 failure {
-                    echo '❌ DEPLOY STAGE FAILED — Smoke test did not pass. Rolling back staging...'
-                    sh '''
-                        docker compose -f docker-compose.yml -f docker-compose.staging.yml \\
-                            down --remove-orphans || true
-                        echo "Staging containers stopped"
-                    '''
+                    sh 'docker compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans || true'
                 }
             }
         }
