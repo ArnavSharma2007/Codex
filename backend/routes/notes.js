@@ -31,8 +31,8 @@ router.get('/', auth, async (req, res) => {
   try {
     const notes = await Note.find({
       $or: [
-        { owner: req.user.id.toString(), },
-        { collaborators: owner: req.user.id.toString(), }
+        { owner: req.user.id.toString() },
+        { collaborators: req.user.id.toString() }
       ]
     }).sort({ updatedAt: -1 });
 
