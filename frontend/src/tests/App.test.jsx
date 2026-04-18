@@ -2,36 +2,49 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock framer-motion to prevent useScroll crashes and strip animation props
+// Mock framer-motion to completely bypass animations during tests
 jest.mock('framer-motion', () => {
   const React = require('react');
-  
-  // Helper to remove motion-specific props so React doesn't throw warnings
+
+  // Strip motion props so React doesn't complain about unrecognized attributes
   const cleanProps = (props) => {
-    const { initial, animate, exit, transition, whileHover, whileTap, variants, style, ...rest } = props;
+    const {
+      initial, animate, exit, transition, whileHover, whileTap,
+      variants, style, layoutId, onHoverStart, onHoverEnd, ...rest
+    } = props;
     return rest;
   };
 
+  const createMockComponent = (Tag) => React.forwardRef((props, ref) => (
+    <Tag ref={ref} {...cleanProps(props)} />
+  ));
+
   return {
+    __esModule: true, // Tell Jest this is an ES Module
     motion: {
-      div: React.forwardRef((props, ref) => <div ref={ref} {...cleanProps(props)} />),
-      form: React.forwardRef((props, ref) => <form ref={ref} {...cleanProps(props)} />),
-      h1: React.forwardRef((props, ref) => <h1 ref={ref} {...cleanProps(props)} />),
-      h2: React.forwardRef((props, ref) => <h2 ref={ref} {...cleanProps(props)} />),
-      p: React.forwardRef((props, ref) => <p ref={ref} {...cleanProps(props)} />),
-      span: React.forwardRef((props, ref) => <span ref={ref} {...cleanProps(props)} />),
-      button: React.forwardRef((props, ref) => <button ref={ref} {...cleanProps(props)} />),
-      input: React.forwardRef((props, ref) => <input ref={ref} {...cleanProps(props)} />),
+      div: createMockComponent('div'),
+      form: createMockComponent('form'),
+      h1: createMockComponent('h1'),
+      h2: createMockComponent('h2'),
+      p: createMockComponent('p'),
+      span: createMockComponent('span'),
+      button: createMockComponent('button'),
+      input: createMockComponent('input'),
+      a: createMockComponent('a'),
+      img: createMockComponent('img'),
+      nav: createMockComponent('nav'),
+      ul: createMockComponent('ul'),
+      li: createMockComponent('li'),
     },
     AnimatePresence: ({ children }) => <>{children}</>,
-    // Provide safe dummy returns for motion hooks
-    useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
-    useTransform: () => ({ get: () => 0 }),
-    useSpring: () => ({ get: () => 0 }),
-    useAnimation: () => ({ start: jest.fn(), stop: jest.fn() }),
+    // Aggressively define these hooks as functions
+    useScroll: function() { return { scrollYProgress: { get: () => 0 } }; },
+    useTransform: function() { return { get: () => 0 }; },
+    useSpring: function() { return { get: () => 0 }; },
+    useAnimation: function() { return { start: jest.fn(), stop: jest.fn() }; },
+    useInView: function() { return true; }
   };
 });
-
 // Mock Lenis (used in main.jsx but not in App)
 jest.mock('lenis', () => {
   return jest.fn().mockImplementation(() => ({
