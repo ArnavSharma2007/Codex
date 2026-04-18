@@ -2,56 +2,6 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock framer-motion to completely bypass animations during tests
-jest.mock('framer-motion', () => {
-  const React = require('react');
-
-  // Strip motion props so React doesn't complain about unrecognized attributes
-  const cleanProps = (props) => {
-    const {
-      initial, animate, exit, transition, whileHover, whileTap,
-      variants, style, layoutId, onHoverStart, onHoverEnd, ...rest
-    } = props;
-    return rest;
-  };
-
-  const createMockComponent = (Tag) => React.forwardRef((props, ref) => (
-    <Tag ref={ref} {...cleanProps(props)} />
-  ));
-
-  return {
-    __esModule: true, // Tell Jest this is an ES Module
-    motion: {
-      div: createMockComponent('div'),
-      form: createMockComponent('form'),
-      h1: createMockComponent('h1'),
-      h2: createMockComponent('h2'),
-      p: createMockComponent('p'),
-      span: createMockComponent('span'),
-      button: createMockComponent('button'),
-      input: createMockComponent('input'),
-      a: createMockComponent('a'),
-      img: createMockComponent('img'),
-      nav: createMockComponent('nav'),
-      ul: createMockComponent('ul'),
-      li: createMockComponent('li'),
-    },
-    AnimatePresence: ({ children }) => <>{children}</>,
-    // Aggressively define these hooks as functions
-    useScroll: function() { return { scrollYProgress: { get: () => 0 } }; },
-    useTransform: function() { return { get: () => 0 }; },
-    useSpring: function() { return { get: () => 0 }; },
-    useAnimation: function() { return { start: jest.fn(), stop: jest.fn() }; },
-    useInView: function() { return true; }
-  };
-});
-// Mock Lenis (used in main.jsx but not in App)
-jest.mock('lenis', () => {
-  return jest.fn().mockImplementation(() => ({
-    raf: jest.fn(),
-  }));
-});
-
 // Mock framer-motion to avoid animation issues in test
 jest.mock('framer-motion', () => ({
   motion: {
