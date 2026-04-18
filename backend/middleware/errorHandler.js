@@ -16,12 +16,12 @@ const errorHandler = (err, req, res, next) => {
   });
 
   res.status(status).json({
-    error: {
-      message,
-      status,
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
-    },
-  });
+  errors: [
+    {
+      message
+    }
+  ]
+});
 };
 
 module.exports = errorHandler;
