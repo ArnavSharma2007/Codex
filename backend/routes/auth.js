@@ -32,7 +32,10 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res)
 
   const existing = await User.findOne({ email: normalizedEmail });
   if (existing) {
-    return res.status(409).json({ message: 'User already registered' });
+    authFailures.inc({ reason: 'email_taken' });
+    return res.status(409).json({
+      message: 'User already registered' // ✅ tests expect `message`, not errors[]
+    });
   }
 
   const salt = await bcrypt.genSalt(12);
@@ -76,7 +79,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   if (!user) {
     authFailures.inc({ reason: 'user_not_found' });
     return res.status(401).json({
-      errors: [{ message: 'Invalid credentials' }]
+      message: 'Invalid credentials' // ✅ tests expect `message`
     });
   }
 
@@ -84,7 +87,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   if (!isMatch) {
     authFailures.inc({ reason: 'wrong_password' });
     return res.status(401).json({
-      errors: [{ message: 'Invalid credentials' }]
+      message: 'Invalid credentials' // ✅ tests expect `message`
     });
   }
 
@@ -108,14 +111,14 @@ router.post('/set-premium', validate(setPremiumSchema), async (req, res) => {
 
   if (adminKey !== process.env.ADMIN_KEY) {
     return res.status(403).json({
-      errors: [{ message: 'Forbidden' }]
+      message: 'Forbidden'
     });
   }
 
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(404).json({
-      errors: [{ message: 'User not found' }]
+      message: 'User not found'
     });
   }
 
@@ -133,7 +136,7 @@ router.post('/get-user-status', async (req, res) => {
 
   if (!email) {
     return res.status(400).json({
-      errors: [{ message: 'Email required' }]
+      message: 'Email required'
     });
   }
 
@@ -141,7 +144,7 @@ router.post('/get-user-status', async (req, res) => {
 
   if (!user) {
     return res.status(404).json({
-      errors: [{ message: 'User not found' }]
+      message: 'User not found'
     });
   }
 
