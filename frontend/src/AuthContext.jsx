@@ -27,7 +27,14 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         setIsPremium(data.user.isPremium);
         // Sync ID for local use
-        localStorage.setItem("devcodex_userid", data.user.id || data.user._id);
+        // Explicitly pick fields to "sanitize" the object structure
+        const safeUser = {
+            id: String(userData.id),
+            name: String(userData.name),
+            email: String(userData.email),
+            isPremium: Boolean(userData.isPremium)
+        };
+        localStorage.setItem('user', JSON.stringify(safeUser));
       } else {
         // If verification fails (e.g. user deleted in DB), clear session
         logout();
