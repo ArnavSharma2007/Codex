@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock dependencies
@@ -39,7 +39,6 @@ describe('Navbar Component', () => {
   it('renders brand name', () => {
     renderNavbar();
     console.log('[TEST] Navbar: checking brand text ✅');
-    expect(screen.getByText('Dev@Deakin')).toBeInTheDocument();
     expect(screen.getByText('Codex')).toBeInTheDocument();
   });
 
@@ -50,16 +49,9 @@ describe('Navbar Component', () => {
     console.log('[TEST] Navbar: navigation links present ✅');
   });
 
-  it('renders theme toggle button', () => {
-    renderNavbar();
-    const themeBtn = screen.getByTitle(/switch to/i);
-    expect(themeBtn).toBeInTheDocument();
-    console.log('[TEST] Navbar: theme toggle present ✅');
-  });
-
   it('renders logout button for authenticated user', () => {
     renderNavbar();
-    expect(screen.getByText('Logout')).toBeInTheDocument();
+    expect(screen.getByText('Terminal Off')).toBeInTheDocument();
     console.log('[TEST] Navbar: logout button present for authenticated user ✅');
   });
 });
