@@ -197,7 +197,7 @@ BACKEND_ADMIN_KEY=admin_staging
 ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
 GRAFANA_PASSWORD=staging-admin
 IMAGE_TAG=${IMAGE_VERSION:-latest}
-PORT=5001
+PORT=5000
 EOF
 
                     ./docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging down --remove-orphans || true
