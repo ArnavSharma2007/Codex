@@ -43,7 +43,7 @@ app.use(cors({
 }));
 
 // ── Body Parsing ──────────────────────────────────────────────────────────
-app.use(express.json();
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── HTTP Request Logging (Morgan → Winston) ──────────────────────────────
