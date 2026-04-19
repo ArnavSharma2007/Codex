@@ -180,7 +180,6 @@ pipeline {
                     curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
                     chmod +x ./docker-compose
 
-                    # Automatically fix the USERNAME placeholder in YAML files
                     sed -i 's/USERNAME/arnavsharma2007/g' docker-compose*.yml || true
 
                     echo "MONGO_URI=$MONGO_URI" > .env.staging
@@ -192,6 +191,7 @@ pipeline {
                     echo "BACKEND_ADMIN_KEY=admin_staging" >> .env.staging
                     echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.staging
                     echo "GRAFANA_PASSWORD=staging-admin" >> .env.staging
+                    echo "DOCKER_USERNAME=arnavsharma2007" >> .env.staging
                     echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.staging
                     echo "PORT=5001" >> .env.staging
                     echo "HOST=0.0.0.0" >> .env.staging
@@ -252,6 +252,18 @@ pipeline {
                 '''
 
                 sh '''
+                    sed -i 's/USERNAME/arnavsharma2007/g' docker-compose*.yml || true
+
+                    # Prevent Docker directory mount crash if prometheus.yml is missing from workspace
+                    if [ ! -f prometheus.yml ]; then
+                        echo "global:" > prometheus.yml
+                        echo "  scrape_interval: 15s" >> prometheus.yml
+                        echo "scrape_configs:" >> prometheus.yml
+                        echo "  - job_name: 'prometheus'" >> prometheus.yml
+                        echo "    static_configs:" >> prometheus.yml
+                        echo "      - targets: ['localhost:9090']" >> prometheus.yml
+                    fi
+
                     echo "MONGO_URI=$MONGO_URI" > .env.prod
                     echo "JWT_SECRET=$JWT_SECRET" >> .env.prod
                     echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
@@ -261,6 +273,7 @@ pipeline {
                     echo "BACKEND_ADMIN_KEY=admin_prod_secure" >> .env.prod
                     echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.prod
                     echo "GRAFANA_PROD_PASSWORD=prod-secure-admin" >> .env.prod
+                    echo "DOCKER_USERNAME=arnavsharma2007" >> .env.prod
                     echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.prod
                     echo "PORT=5000" >> .env.prod
                     echo "HOST=0.0.0.0" >> .env.prod
@@ -275,13 +288,13 @@ pipeline {
             steps {
                 sh '''
                     echo "── Checking Prometheus Health ──"
-                    docker exec prometheus wget -qS -O- http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "Prometheus not found or unreachable"
+                    docker exec codex-prometheus-prod wget -qS -O- http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "Prometheus not found or unreachable"
                     
                     echo "── Checking Frontend Health ──"
-                    docker exec codex-frontend-staging wget -qS -O- http://127.0.0.1:3001/api/health 2>/dev/null || echo "Frontend not found or unreachable"
+                    docker exec codex-frontend-prod wget -qS -O- http://127.0.0.1:3001/api/health 2>/dev/null || echo "Frontend not found or unreachable"
                     
                     echo "── Checking Backend Metrics ──"
-                    docker exec codex-backend-staging wget -qO- http://127.0.0.1:5001/metrics 2>/dev/null | head -5 || echo "Backend metrics unreachable"
+                    docker exec codex-backend-prod wget -qO- http://127.0.0.1:5000/metrics 2>/dev/null | head -5 || echo "Backend metrics unreachable"
                 '''
             }
         }
