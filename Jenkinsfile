@@ -180,8 +180,6 @@ pipeline {
                     curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-$(uname -s)-$(uname -m)" -o ./docker-compose
                     chmod +x ./docker-compose
 
-                    sed -i 's/USERNAME/arnavsharma2007/g' docker-compose*.yml || true
-
                     echo "MONGO_URI=$MONGO_URI" > .env.staging
                     echo "JWT_SECRET=$JWT_SECRET" >> .env.staging
                     echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.staging
@@ -252,17 +250,11 @@ pipeline {
                 '''
 
                 sh '''
+                    # 1. Swap the hardcoded USERNAME with your actual DockerHub username
                     sed -i 's/USERNAME/arnavsharma2007/g' docker-compose*.yml || true
-
-                    # Prevent Docker directory mount crash if prometheus.yml is missing from workspace
-                    if [ ! -f prometheus.yml ]; then
-                        echo "global:" > prometheus.yml
-                        echo "  scrape_interval: 15s" >> prometheus.yml
-                        echo "scrape_configs:" >> prometheus.yml
-                        echo "  - job_name: 'prometheus'" >> prometheus.yml
-                        echo "    static_configs:" >> prometheus.yml
-                        echo "      - targets: ['localhost:9090']" >> prometheus.yml
-                    fi
+                    
+                    # 2. DELETE the prometheus.yml volume mount to fix the Docker-out-of-Docker crash
+                    sed -i '/prometheus.yml/d' docker-compose*.yml || true
 
                     echo "MONGO_URI=$MONGO_URI" > .env.prod
                     echo "JWT_SECRET=$JWT_SECRET" >> .env.prod
