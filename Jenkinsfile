@@ -51,10 +51,10 @@ pipeline {
 
                 echo '── Building Docker images ──'
                 sh """
-                    docker build -t ${BACKEND_IMAGE} -t arnavsharma2007/codex-backend:latest ./backend
+                    docker build -t \${BACKEND_IMAGE} -t arnavsharma2007/codex-backend:latest ./backend
                     docker build \\
                         --build-arg VITE_BACKEND_URL=http://localhost:5000 \\
-                        -t ${FRONTEND_IMAGE} \\
+                        -t \${FRONTEND_IMAGE} \\
                         -t arnavsharma2007/codex-frontend:latest \\
                         ./frontend
                 """
@@ -108,14 +108,14 @@ pipeline {
                 withSonarQubeEnv('SonarCloud') {
                     sh """
                         npx sonar-scanner \\
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                            -Dsonar.organization=${SONAR_ORG} \\
+                            -Dsonar.projectKey=\${SONAR_PROJECT_KEY} \\
+                            -Dsonar.organization=\${SONAR_ORG} \\
                             -Dsonar.host.url=https://sonarcloud.io \\
-                            -Dsonar.login=${SONAR_TOKEN} \\
+                            -Dsonar.login=\${SONAR_TOKEN} \\
                             -Dsonar.sources=backend/,frontend/src \\
                             -Dsonar.exclusions="**/node_modules/**,**/coverage/**,**/tests/**,**/dist/**,**/*.test.*,**/*.spec.*" \\
                             -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info \\
-                            -Dsonar.branch.name=${env.BRANCH_NAME ?: 'main'}
+                            -Dsonar.branch.name=\${env.BRANCH_NAME ?: 'main'}
                     """
                 }
             }
@@ -162,8 +162,8 @@ pipeline {
                     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b . || true
 
                     if [ -f "./trivy" ]; then
-                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table ${BACKEND_IMAGE} || true
-                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table ${FRONTEND_IMAGE} || true
+                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table \${BACKEND_IMAGE} || true
+                        ./trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table \${FRONTEND_IMAGE} || true
                     fi
                 """
             }
@@ -180,16 +180,16 @@ pipeline {
                     curl -sSL "https://github.com/docker/compose/releases/download/v2.26.0/docker-compose-\$(uname -s)-\$(uname -m)" -o ./docker-compose
                     chmod +x ./docker-compose
 
-                    echo "MONGO_URI=${MONGO_URI}" > .env.staging
-                    echo "JWT_SECRET=${JWT_SECRET}" >> .env.staging
-                    echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> .env.staging
-                    echo "STRIPE_SECRET=${STRIPE_SECRET}" >> .env.staging
-                    echo "STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}" >> .env.staging
-                    echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env.staging
+                    echo "MONGO_URI=\${env.MONGO_URI ?: ''}" > .env.staging
+                    echo "JWT_SECRET=\${env.JWT_SECRET ?: ''}" >> .env.staging
+                    echo "GEMINI_API_KEY=\${env.GEMINI_API_KEY ?: ''}" >> .env.staging
+                    echo "STRIPE_SECRET=\${env.STRIPE_SECRET ?: 'sk_test_placeholder'}" >> .env.staging
+                    echo "STRIPE_PUBLISHABLE_KEY=\${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_test_placeholder'}" >> .env.staging
+                    echo "STRIPE_WEBHOOK_SECRET=\${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}" >> .env.staging
                     echo "BACKEND_ADMIN_KEY=admin_staging" >> .env.staging
-                    echo "ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL}" >> .env.staging
+                    echo "ALERT_WEBHOOK_URL=\${env.ALERT_WEBHOOK_URL ?: ''}" >> .env.staging
                     echo "GRAFANA_PASSWORD=staging-admin" >> .env.staging
-                    echo "IMAGE_TAG=${IMAGE_VERSION}" >> .env.staging
+                    echo "IMAGE_TAG=\${env.IMAGE_VERSION ?: 'latest'}" >> .env.staging
                     echo "PORT=5000" >> .env.staging
                     echo "HOST=0.0.0.0" >> .env.staging
 
@@ -201,7 +201,7 @@ pipeline {
 
                 sh """
                     for i in 1 2 3 4 5; do
-                        RESPONSE=\$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 ${STAGING_BACKEND_URL}/health 2>/dev/null || echo "000")
+                        RESPONSE=\$(curl -s -o /tmp/health_response.json -w "%{http_code}" --max-time 10 \${STAGING_BACKEND_URL}/health 2>/dev/null || echo "000")
 
                         if [ "\$RESPONSE" = "200" ]; then
                             BODY=\$(cat /tmp/health_response.json)
@@ -238,10 +238,10 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh """
-                    echo "${DOCKERHUB_CREDS_PSW}" | docker login -u "${DOCKERHUB_CREDS_USR}" --password-stdin
-                    docker push ${BACKEND_IMAGE}
+                    echo "\${DOCKERHUB_CREDS_PSW}" | docker login -u "\${DOCKERHUB_CREDS_USR}" --password-stdin
+                    docker push \${BACKEND_IMAGE}
                     docker push arnavsharma2007/codex-backend:latest
-                    docker push ${FRONTEND_IMAGE}
+                    docker push \${FRONTEND_IMAGE}
                     docker push arnavsharma2007/codex-frontend:latest
                     docker logout
                 """
@@ -249,21 +249,21 @@ pipeline {
                 sh """
                     git config user.email "jenkins@codex-ci.local"
                     git config user.name "Jenkins CI"
-                    git tag -a ${IMAGE_VERSION} -m "Release ${IMAGE_VERSION}" || true
-                    git push origin ${IMAGE_VERSION} || true
+                    git tag -a \${IMAGE_VERSION} -m "Release \${IMAGE_VERSION}" || true
+                    git push origin \${IMAGE_VERSION} || true
                 """
 
                 sh """
-                    echo "MONGO_URI=${MONGO_URI}" > .env.prod
-                    echo "JWT_SECRET=${JWT_SECRET}" >> .env.prod
-                    echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> .env.prod
-                    echo "STRIPE_SECRET=${STRIPE_SECRET}" >> .env.prod
-                    echo "STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}" >> .env.prod
-                    echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env.prod
+                    echo "MONGO_URI=\${env.MONGO_URI ?: ''}" > .env.prod
+                    echo "JWT_SECRET=\${env.JWT_SECRET ?: ''}" >> .env.prod
+                    echo "GEMINI_API_KEY=\${env.GEMINI_API_KEY ?: ''}" >> .env.prod
+                    echo "STRIPE_SECRET=\${env.STRIPE_SECRET ?: 'sk_prod_placeholder'}" >> .env.prod
+                    echo "STRIPE_PUBLISHABLE_KEY=\${env.STRIPE_PUBLISHABLE_KEY ?: 'pk_prod_placeholder'}" >> .env.prod
+                    echo "STRIPE_WEBHOOK_SECRET=\${env.STRIPE_WEBHOOK_SECRET ?: 'whsec_placeholder'}" >> .env.prod
                     echo "BACKEND_ADMIN_KEY=admin_prod_secure" >> .env.prod
-                    echo "ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL}" >> .env.prod
+                    echo "ALERT_WEBHOOK_URL=\${env.ALERT_WEBHOOK_URL ?: ''}" >> .env.prod
                     echo "GRAFANA_PROD_PASSWORD=prod-secure-admin" >> .env.prod
-                    echo "IMAGE_TAG=${IMAGE_VERSION}" >> .env.prod
+                    echo "IMAGE_TAG=\${env.IMAGE_VERSION ?: 'latest'}" >> .env.prod
                     echo "PORT=5000" >> .env.prod
                     echo "HOST=0.0.0.0" >> .env.prod
 
