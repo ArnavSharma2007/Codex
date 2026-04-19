@@ -189,6 +189,7 @@ pipeline {
                     echo "BACKEND_ADMIN_KEY=admin_staging" >> .env.staging
                     echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.staging
                     echo "GRAFANA_PASSWORD=staging-admin" >> .env.staging
+                    echo "USERNAME=arnavsharma2007" >> .env.staging
                     echo "DOCKER_USERNAME=arnavsharma2007" >> .env.staging
                     echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.staging
                     echo "PORT=5001" >> .env.staging
@@ -259,6 +260,7 @@ pipeline {
                     echo "BACKEND_ADMIN_KEY=admin_prod_secure" >> .env.prod
                     echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.prod
                     echo "GRAFANA_PROD_PASSWORD=prod-secure-admin" >> .env.prod
+                    echo "USERNAME=arnavsharma2007" >> .env.prod
                     echo "DOCKER_USERNAME=arnavsharma2007" >> .env.prod
                     echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.prod
                     echo "PORT=5000" >> .env.prod
