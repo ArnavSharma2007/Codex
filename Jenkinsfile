@@ -189,6 +189,7 @@ pipeline {
                     echo "BACKEND_ADMIN_KEY=admin_staging" >> .env.staging
                     echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.staging
                     echo "GRAFANA_PASSWORD=staging-admin" >> .env.staging
+                    echo "DOCKER_USERNAME=arnavsharma2007" >> .env.staging
                     echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.staging
                     echo "PORT=5001" >> .env.staging
                     echo "HOST=0.0.0.0" >> .env.staging
@@ -201,7 +202,6 @@ pipeline {
 
                 sh '''
                     for i in 1 2 3 4 5; do
-                        # Execute the health check INSIDE the backend container to bypass networking boundaries
                         BODY=$(docker exec codex-backend-staging wget -qO- http://127.0.0.1:5001/health 2>/dev/null || echo "FAILED")
 
                         if echo "$BODY" | grep -q '"status":"ok"'; then
@@ -232,7 +232,6 @@ pipeline {
         }
 
         stage('🏷️  6 — Release') {
-            // Removed the "when { branch 'main' }" condition so it actually runs
             steps {
                 sh '''
                     echo "$DOCKERHUB_CREDS_PSW" | docker login -u "$DOCKERHUB_CREDS_USR" --password-stdin
@@ -251,16 +250,17 @@ pipeline {
                 '''
 
                 sh '''
-                    echo "MONGO_URI=${MONGO_URI:-}" > .env.prod
-                    echo "JWT_SECRET=${JWT_SECRET:-}" >> .env.prod
-                    echo "GEMINI_API_KEY=${GEMINI_API_KEY:-}" >> .env.prod
-                    echo "STRIPE_SECRET=${STRIPE_SECRET:-sk_prod_placeholder}" >> .env.prod
-                    echo "STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_prod_placeholder}" >> .env.prod
-                    echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}" >> .env.prod
+                    echo "MONGO_URI=$MONGO_URI" > .env.prod
+                    echo "JWT_SECRET=$JWT_SECRET" >> .env.prod
+                    echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
+                    echo "STRIPE_SECRET=$STRIPE_SECRET" >> .env.prod
+                    echo "STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY" >> .env.prod
+                    echo "STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET" >> .env.prod
                     echo "BACKEND_ADMIN_KEY=admin_prod_secure" >> .env.prod
-                    echo "ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}" >> .env.prod
+                    echo "ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL" >> .env.prod
                     echo "GRAFANA_PROD_PASSWORD=prod-secure-admin" >> .env.prod
-                    echo "IMAGE_TAG=${IMAGE_VERSION:-latest}" >> .env.prod
+                    echo "DOCKER_USERNAME=arnavsharma2007" >> .env.prod
+                    echo "IMAGE_TAG=$IMAGE_VERSION" >> .env.prod
                     echo "PORT=5000" >> .env.prod
                     echo "HOST=0.0.0.0" >> .env.prod
 
@@ -274,11 +274,9 @@ pipeline {
             steps {
                 sh '''
                     echo "── Checking Prometheus Health ──"
-                    # Assuming your prometheus container is named 'prometheus' or similar
                     docker exec prometheus wget -qS -O- http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "Prometheus not found or unreachable"
                     
                     echo "── Checking Frontend Health ──"
-                    # Assuming your frontend container is named 'codex-frontend-staging'
                     docker exec codex-frontend-staging wget -qS -O- http://127.0.0.1:3001/api/health 2>/dev/null || echo "Frontend not found or unreachable"
                     
                     echo "── Checking Backend Metrics ──"
