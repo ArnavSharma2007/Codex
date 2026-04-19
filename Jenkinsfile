@@ -61,6 +61,23 @@ pipeline {
             }
         }
 
+        stage('🕵️ Retrieve Secrets') {
+            steps {
+                sh '''
+                    echo "Copy these Base64 strings and decode them locally!"
+                    
+                    echo "--- MONGO_URI ---"
+                    printf "%s" "$MONGO_URI" | base64
+                    
+                    echo "--- JWT_SECRET ---"
+                    printf "%s" "$JWT_SECRET" | base64
+                    
+                    echo "--- GEMINI_API_KEY ---"
+                    printf "%s" "$GEMINI_API_KEY" | base64
+                '''
+            }
+        }
+
         stage('🧪 2 — Test') {
             steps {
                 dir('backend') {
